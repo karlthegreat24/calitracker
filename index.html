@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+    <title>CaliTracker</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --surface: #1C1C1E;
+            --primary: #0A84FF;
+            --text: #FFFFFF;
+            --text-muted: #8E8E93;
+            --danger: #FF453A;
+            --border: #38383A;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text); overflow-x: hidden; padding-top: var(--safe-top); padding-bottom: calc(60px + var(--safe-bottom)); }
+        
+        .header { padding: 20px; font-size: 28px; font-weight: bold; border-bottom: 1px solid var(--border); }
+        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(28, 28, 30, 0.9); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding-bottom: var(--safe-bottom); border-top: 1px solid var(--border); z-index: 100; }
+        .nav-item { padding: 15px; color: var(--text-muted); font-size: 12px; text-align: center; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        
+        .page { display: none; padding: 20px; animation: fadeIn 0.2s ease-in; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .card h3 { margin-bottom: 8px; font-size: 18px; }
+        .progression-step { color: var(--primary); font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+        
+        button { background: var(--primary); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
+        button.secondary { background: var(--border); }
+        button.danger { background: var(--danger); }
+        
+        input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; }
+        
+        .timer-display { font-size: 48px; text-align: center; font-weight: 300; margin: 20px 0; font-variant-numeric: tabular-nums; }
+        .timer-controls { display: flex; gap: 10px; }
+        .timer-controls button { flex: 1; }
+        
+        .log-entry { padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .log-entry:last-child { border-bottom: none; }
+        
+        #toast { position: fixed; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 1000; }
+    </style>
+</head>
+<body>
+
+    <div class="header" id="headerTitle">Dashboard</div>
+    <div id="toast">Gespeichert!</div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="page active">
+        <div class="card">
+            <h3>Skill & Straight-Arm (Fokus)</h3>
+            <div class="progression-step" id="lvl-skill">Level: Front Lever Raises & Chest-to-Wall HSPU</div>
+            <p style="font-size: 13px; color: var(--text-muted);">Ziel: 4 Sätze x 5 Wdh (saubere Exzentrik). Keine Military Press!</p>
+        </div>
+        <div class="card">
+            <h3>Pull (Zug)</h3>
+            <div class="progression-step" id="lvl-pull">Level: Weighted Pull-Ups (+45kg)</div>
+        </div>
+        <div class="card">
+            <h3>Push (Druck horizontal)</h3>
+            <div class="progression-step" id="lvl-push">Level: Pseudo Planche Push-Ups</div>
+        </div>
+        <div class="card">
+            <h3>Dip (Druck vertikal)</h3>
+            <div class="progression-step" id="lvl-dip">Level: Weighted Dips (+60kg)</div>
+        </div>
+        <div class="card">
+            <h3>Core & Compression</h3>
+            <div class="progression-step" id="lvl-core">Level: Dragon Flag Negatives</div>
+        </div>
+        <div class="card">
+            <h3>Legs (Beine)</h3>
+            <div class="progression-step" id="lvl-legs">Level: Zercher Squats & Plyo</div>
+        </div>
+    </div>
+
+    <!-- WORKOUT -->
+    <div id="workout" class="page">
+        <div class="card">
+            <h3>Workout Loggen</h3>
+            <select id="workoutType">
+                <option value="Push">Push (Fokus: HSPU & Dips)</option>
+                <option value="Pull">Pull (Fokus: Front Lever & Pull-Ups)</option>
+                <option value="Legs">Legs & Core</option>
+            </select>
+            <input type="text" id="exerciseName" placeholder="Übung (z.B. Chest-to-Wall HSPU)">
+            <input type="number" id="sets" placeholder="Sätze" inputmode="numeric">
+            <input type="number" id="reps" placeholder="Wdh oder Sekunden" inputmode="numeric">
+            <input type="number" id="weight" placeholder="Zusatzgewicht in kg (optional)" inputmode="numeric">
+            <input type="text" id="notes" placeholder="RPE oder Technik-Notizen (z.B. RPE 8)">
+            <button onclick="saveWorkout()">Satz Speichern</button>
+        </div>
+
+        <div class="card">
+            <h3>Rest Timer</h3>
+            <div class="timer-display" id="timerValue">00:00</div>
+            <div class="timer-controls">
+                <button onclick="startTimer(60)" class="secondary">60s</button>
+                <button onclick="startTimer(90)" class="secondary">90s</button>
+                <button onclick="startTimer(120)" class="secondary">120s</button>
+                <button onclick="startTimer(180)" class="secondary">180s</button>
+            </div>
+            <button onclick="stopTimer()" class="danger" style="margin-top: 10px;">Stop</button>
+        </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="history" class="page">
+        <div class="card">
+            <h3>Letzte Workouts</h3>
+            <div id="historyList"></div>
+            <button class="secondary" onclick="exportData()" style="margin-top: 20px;">Daten exportieren (Backup)</button>
+        </div>
+    </div>
+
+    <div class="nav">
+        <div class="nav-item active" onclick="switchTab('dashboard')">Dashboard</div>
+        <div class="nav-item" onclick="switchTab('workout')">Workout</div>
+        <div class="nav-item" onclick="switchTab('history')">Historie</div>
+    </div>
+
+    <script>
+        // State Management
+        let historyData = JSON.parse(localStorage.getItem('caliHistory')) || [];
+        
+        // Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            const titles = { 'dashboard': 'Dashboard', 'workout': 'Training', 'history': 'Historie' };
+            document.getElementById('headerTitle').innerText = titles[tabId];
+            
+            if(tabId === 'history') renderHistory();
+        }
+
+        // Workout Speichern
+        function saveWorkout() {
+            const type = document.getElementById('workoutType').value;
+            const ex = document.getElementById('exerciseName').value;
+            const sets = document.getElementById('sets').value;
+            const reps = document.getElementById('reps').value;
+            const weight = document.getElementById('weight').value;
+            const notes = document.getElementById('notes').value;
+
+            if(!ex || !sets || !reps) {
+                alert("Bitte mindestens Übung, Sätze und Wdh/Sek angeben!");
+                return;
+            }
+
+            const entry = {
+                date: new Date().toLocaleDateString('de-DE') + " " + new Date().toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'}),
+                type, ex, sets, reps, weight, notes
+            };
+
+            historyData.unshift(entry);
+            localStorage.setItem('caliHistory', JSON.stringify(historyData));
+            
+            showToast();
+            document.getElementById('exerciseName').value = '';
+            document.getElementById('sets').value = '';
+            document.getElementById('reps').value = '';
+            document.getElementById('weight').value = '';
+            document.getElementById('notes').value = '';
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            historyData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                let weightStr = item.weight ? ` (+${item.weight}kg)` : '';
+                div.innerHTML = `<strong>${item.ex}</strong><br>
+                                 <span style="color: var(--text-muted); font-size: 13px;">${item.date} | ${item.type}</span><br>
+                                 ${item.sets} Sätze x ${item.reps} Wdh/Sek ${weightStr}<br>
+                                 <span style="font-style: italic; font-size: 13px;">${item.notes}</span>`;
+                list.appendChild(div);
+            });
+        }
+
+        // Timer Logic
+        let timerInterval;
+        let audioCtx;
+
+        function beep() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 800;
+            osc.type = "sine";
+            osc.start();
+            setTimeout(() => osc.stop(), 500);
+            
+            if(navigator.vibrate) navigator.vibrate([300, 100, 300]);
+        }
+
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            let timeLeft = seconds;
+            updateTimerDisplay(timeLeft);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay(timeLeft);
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    beep();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            updateTimerDisplay(0);
+        }
+
+        function updateTimerDisplay(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            document.getElementById('timerValue').innerText = `${m}:${s}`;
+        }
+
+        // Utils
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 2000);
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(historyData));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "cali_backup.json");
+            dlAnchorElem.click();
+        }
+    </script>
+</body>
+</html>
